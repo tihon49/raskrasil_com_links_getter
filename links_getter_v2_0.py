@@ -3,11 +3,14 @@ from bs4 import BeautifulSoup as bs
 from pprint import pprint
 
 
+
+file = open('links.txt', 'a')
 counter = 0
 
 
 def get_soup(url):
     '''придерживаемся принципа DRY'''
+    
     session = requests.Session()
     request = session.get(url)
     soup = bs(request.text, 'lxml')
@@ -16,6 +19,7 @@ def get_soup(url):
 
 def get_categories_links() -> list:
     '''получаем ссылки на все категории'''
+
     url = 'https://raskrasil.com/'
     categories_list = []
     soup = get_soup(url)
@@ -45,14 +49,13 @@ def get_alboms_liks_from_categories(lst):
         print(f'получаем ссылки на альбомы из категории {category}')
         url = 'https://raskrasil.com/category/' + category
         soup = get_soup(url)
-        mainDiv = soup.find('div', id='posts-container')
-        alboms = mainDiv.find_all('article')
+        alboms = soup.find('div', id='posts-container').find_all('article')
 
         for albom in alboms:
             albom_link = albom.find('a').get('href')
             alboms_links.append(albom_link)
 
-    print('\n[!] Все ссылки на все альбомы по всем категориям собраны!\n')
+    print(f'\n[!] Все ссылки на все все альбомы по всем категориям собраны!\n[+] Всего альбомов: {len(alboms_links)}\n')
     return alboms_links
 
 
@@ -62,26 +65,28 @@ def get_img_links(url) -> list:
     ссылки на все картинки из альбома
     '''
 
-    global counter
-    print(f'Переходим к получению ссылок на картинки из альбома: {url}')
+    global counter, file
+    print(f'Получаем ссылки на картинки из альбома: {url}')
     soup = get_soup(url)
     links_list = []
-    mainDiv = soup.find('div', class_='post-content')
-    columns = mainDiv.find_all('div', class_='fusion-layout-column')
+    columns = soup.find('div', class_='post-content').find_all('div', class_='fusion-layout-column')
 
-    for i in columns:
-        item = i.find_all('img')
+    for column in columns:
+        images = column.find_all('img')
 
-        for img in item:
+        for img in images:
             if 'data:image/' not in str(img):
                 img_href = img.get('src')
                 links_list.append(img_href)
+                file.write(img_href + '\n')
                 counter += 1
 
+    print(f'[+] Всего картинок: {len(links_list)}\n')
     return links_list
 
 
 def main():
+    print('[!] Нчинаем собирать категории с сайта raskrasil.com\n')
     categories = get_categories_links()
     all_categories_links = get_alboms_liks_from_categories(categories)
     links = []
@@ -89,8 +94,10 @@ def main():
     for albom_link in all_categories_links:
         links.append(get_img_links(albom_link))
 
-    pprint(links)
-    print(f'\nВсего собрано {counter} ссылок на картинки.')
+    print(f'\n[+] Всего собрано {counter} ссылок на картинки.')
+
+    global file
+    file.close()
 
 
 if __name__ == '__main__':

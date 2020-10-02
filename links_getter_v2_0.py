@@ -4,7 +4,7 @@ from pprint import pprint
 
 
 
-file = open('links.txt', 'a')
+file = open('links.log', 'a')
 counter = 0
 
 

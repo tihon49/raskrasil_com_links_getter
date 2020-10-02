@@ -1,11 +1,24 @@
 import requests
 from bs4 import BeautifulSoup as bs
 from pprint import pprint
-
+from threading import Thread
 
 
 file = open('links.log', 'a')
 counter = 0
+
+
+def threaded(func):
+    """
+    Decorator that multithreads the target function
+    with the given parameters. Returns the thread
+    created for the function
+    """
+    def wrapper(*args, **kwargs):
+        thread = Thread(target=func, args=args)
+        thread.start()
+        return thread
+    return wrapper
 
 
 def get_soup(url):
@@ -38,8 +51,8 @@ def get_categories_links() -> list:
 
 def get_alboms_liks_from_categories(lst):
     '''
-    получаем список категорий, собираем все альбомы из категорий,
-    возвращем список ссылок на собранные альбомы
+    получаем список категорий, собираем все альбомы из 
+    категорий, возвращем список ссылок на собранные альбомы
     '''
 
     print('[!] Начинаем собирать ссылки на альбомы по каждой категории...\n')
@@ -59,14 +72,14 @@ def get_alboms_liks_from_categories(lst):
     return alboms_links
 
 
+@threaded
 def get_img_links(url) -> list:
     '''
     получаем ссылку на альбом, возвращаем
     ссылки на все картинки из альбома
     '''
 
-    global counter, file
-    print(f'Получаем ссылки на картинки из альбома: {url}')
+    global counter, file    
     soup = get_soup(url)
     links_list = []
     columns = soup.find('div', class_='post-content').find_all('div', class_='fusion-layout-column')
@@ -81,7 +94,7 @@ def get_img_links(url) -> list:
                 file.write(img_href + '\n')
                 counter += 1
 
-    print(f'[+] Всего картинок: {len(links_list)}\n')
+    print(f'Получены ссылки на картинки из альбома: {url}\n[+] Всего картинок: {len(links_list)}\n')
     return links_list
 
 
@@ -94,11 +107,9 @@ def main():
     for albom_link in all_categories_links:
         links.append(get_img_links(albom_link))
 
-    print(f'\n[+] Всего собрано {counter} ссылок на картинки.')
-
-    global file
-    file.close()
-
 
 if __name__ == '__main__':
     main()
+
+
+# TODO: решить проблему с закрытием файла для записи ссылок links.txt
